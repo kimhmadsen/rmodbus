@@ -1,6 +1,7 @@
 # ReadOnly and ReadWrite hash interface for modbus registers and coils
 #
 # Copyright (C) 2010  Kelley Reynolds
+# Copyright (C) 2011  Aleksey Timin
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,9 +22,13 @@ module ModBus
 
     # Read single or multiple values from a modbus slave depending on whether a Fixnum or a Range was given.
     # Note that in the case of multiples, a pluralized version of the method is sent to the slave
-    def [](key)
+    def [](key, count = 1)
       if key.instance_of?(Fixnum)
-        @slave.send("read_#{@type}", key, 1)
+        if count > 1
+          @slave.send("read_#{@type}s", key, count)
+        else
+          @slave.send("read_#{@type}", key, 1)
+        end
       elsif key.instance_of?(Range)
         @slave.send("read_#{@type}s", key.first, key.count)
       else
@@ -36,17 +41,26 @@ module ModBus
     # Write single or multiple values to a modbus slave depending on whether a Fixnum or a Range was given.
     # Note that in the case of multiples, a pluralized version of the method is sent to the slave. Also when
     # writing multiple values, the number of elements must match the number of registers in the range or an exception is raised
-    def []=(key, val)
+    def []=(key, count = 1, val)
       if key.instance_of?(Fixnum)
-        @slave.send("write_#{@type}", key, val)
-      elsif key.instance_of?(Range)
-        if key.count != val.size
-          raise ModBus::Errors::ProxyException, "The size of the range must match the size of the values (#{key.count} != #{val.size})"
+        if count > 1
+          check_size(count, val.size)
+          @slave.send("write_#{@type}s", key, val)
+        else
+          @slave.send("write_#{@type}", key, val)
         end
-
+      elsif key.instance_of?(Range)
+        check_size(key.count, val.size)
         @slave.send("write_#{@type}s", key.first, val)
       else
         raise ModBus::Errors::ProxyException, "Invalid argument, must be integer or range. Was #{key.class}"
+      end
+    end
+
+    private 
+    def check_size(c1, c2)
+      if c1 != c2
+        raise ModBus::Errors::ProxyException, "The size of the range must match the size of the values (#{c1} != #{c2})"
       end
     end
   end

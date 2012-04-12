@@ -1,6 +1,12 @@
-NEXT Release
+NEXT Release 1.2.0
 ==================================
 1. Fixed issue [#15](https://github.com/flipback/rmodbus/issues/15) 
+2. Added alternate access for proxy object:
+
+  ```ruby
+    slave.coils[0,5] # Alternate for slave.cloils[0..4]
+    slave.coils[0,5] = [1,2,3,4,5] # Alternate for slave.coils[0..4] = ...
+  ```
 
 2011-10-29 Release 1.1.0
 ===================================
